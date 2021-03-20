@@ -2,6 +2,7 @@
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png">
     <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <Button>啊实打实</Button>
   </div>
 </template>
 
