@@ -2,12 +2,12 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import { elementPlugins } from "./plugins/element"
+import elementPlugins from "./plugins/element"
+import 'element-ui/lib/theme-chalk/index.css';
 Vue.config.productionTip = false
-console.log(elementPlugins)
+Vue.use(elementPlugins)
 new Vue({
   router,
   store,
-  elementPlugins,
   render: h => h(App)
 }).$mount('#app')
