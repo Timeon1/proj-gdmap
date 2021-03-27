@@ -16,9 +16,11 @@ export default {
  data() {
   return {
     map: null,
+    route: null,
+    lineArr: [],
     polyline: null,
     routeForm: {},
-    dataP: {"areaIds":["d33a6c3e9c54419c8496066e2e642717"],"cityCode":"021","adName":"上海市","districtCode":"","districtName":"","track":"","stops":[{"stopId":"e4f9fa7c9c79490cacfa3b4727e424d0","stopName":"荆门市钟祥市文集镇人民政府","stopType":1,"fleetId":"3C45AD1E8EB347F2B678B392B89AA4B2","fleetName":"飞路车队","interval":0,"stopOrder":0,"lonLat":"112.536813,31.157075","stopTypeOn":1},{"stopId":"66b4053d1b1d4d20be05ef76c3dd9045","stopName":"金科路哈雷路公交站-lc","stopType":2,"fleetId":"3C45AD1E8EB347F2B678B392B89AA4B2","fleetName":"飞路车队","interval":0,"stopOrder":30,"lonLat":"121.605779,31.205142","stopTypeOn":1},{"stopId":"c3ce4299f8f849a1851f196f04849b18","stopName":"广兰路地铁站-lc","stopType":2,"fleetId":"3C45AD1E8EB347F2B678B392B89AA4B2","fleetName":"飞路车队","interval":0,"stopOrder":31,"lonLat":"121.620780,31.211176","stopTypeOn":2},{"stopId":"9bf7bf6be14e45069b9ef52e614ec617","stopName":"张江家乐福公交站-lc","stopType":3,"fleetId":"3C45AD1E8EB347F2B678B392B89AA4B2","fleetName":"飞路车队","interval":0,"stopOrder":32,"lonLat":"121.639441,31.204713","stopTypeOn":2}],"cityAreaList":[{"cityCode":"021","cityAdCode":"310000","cityName":"上海市","districtAdCode":"310115","districtName":"浦东新区"},{"cityCode":"020","cityAdCode":"440100","cityName":"广州市","districtAdCode":"440113","districtName":"番禺区"},{"cityCode":"023","cityAdCode":"500100","cityName":"重庆城区","districtAdCode":"500151","districtName":"铜梁区"},{"cityCode":"1558","cityAdCode":"341200","cityName":"阜阳市","districtAdCode":"341204","districtName":"颍泉区"}],"id":"015a7f7d75d046bba58a233a02dffd9b","sobId":"01f99b962cc4468aab3d711b454bd67e","totalDistance":695910}
+    dataP: {"stops":[{"stopName":"高科西路--下南路","stopType":1,"lonLat":"121.552198,31.203649","stopTypeOn":1},{"stopName":"景明路--碧波路572弄","stopType":2,"lonLat":"121.579135,31.202102","stopTypeOn":1},{"stopName":"广兰路地铁站-lc","stopType":2,"lonLat":"121.620780,31.211176","stopTypeOn":2},{"stopName":"张江家乐福公交站-lc","stopType":3,"lonLat":"121.639441,31.204713","stopTypeOn":2}]}
   };
  },
   mounted() {
@@ -49,7 +51,7 @@ export default {
         zIndex: 1
       });
       this.polyline.setMap(this.map);
-      this.showPath(path);
+      // this.showPath(path);
     },
     draw() {
       this.pathAuto = [];
@@ -106,10 +108,88 @@ export default {
               visible: false
             }
           }
-        ); //构造拖拽导航类
+        );
         this.route.search(); //查询导航路径并开启拖拽导航
         AMap.event.addListener(this.route, "complete", this.dragRouteCallback); //返回导航查询结果
       });
+    },
+    //拖拽规划回调
+    dragRouteCallback() {
+      if (this.polyline) {
+        this.polyline.setMap();
+        this.lineArr = [];
+        this.polylineEditor = null;
+      }
+      //导航路径上的所有点
+      var routPoints = this.route.getRoute();
+      var points = [];
+      if (routPoints && routPoints.length > 0) {
+        for (var i = 0; i < routPoints.length; i++) {
+          if (
+            i == 0 &&
+            routPoints[i].getLng() != this.startPos[0] &&
+            routPoints[i].getLat() != this.startPos[1]
+          ) {
+            points.push(this.startPos); //加入起点
+          }
+          points.push([routPoints[i].getLng(), routPoints[i].getLat()]);
+          if (
+            i == routPoints.length - 1 &&
+            routPoints[i].getLng() != this.endPos[0] &&
+            routPoints[i].getLat() != this.endPos[1]
+          ) {
+            points.push(this.endPos); //加入终点
+          }
+        }
+      }
+
+      var x1 = points[0][1]; //上一个采纳点
+      var y1 = points[0][0];
+      var ang1 = null,
+        ang2 = null;
+      var y2 = 0,
+        x2 = 0;
+      var criticalAngle = 3.5;
+
+      //上一个遍历点
+      var preX = x1,
+        preY = y1;
+
+      for (let i = 0; i < points.length; i++) {
+        (y2 = points[i][0]), (x2 = points[i][1]);
+        if (x1 != preX && y1 != preY) {
+          ang1 = this.getAngle(x1, y1, preX, preY);
+        }
+        if (i >= 2) {
+          ang2 = this.getAngle(preX, preY, x2, y2);
+        }
+        if (
+          i == 0 ||
+          (ang2 != null &&
+            (ang2 - ang1 > criticalAngle || ang2 - ang1 < -criticalAngle))
+        ) {
+          this.lineArr.push([preY, preX]);
+          x1 = preX;
+          y1 = preY;
+        }
+        (preX = x2), (preY = y2);
+      }
+      this.lineArr.push(this.endPos);
+      this.createdPolyline(this.lineArr);
+    },
+    //获取偏移角
+    getAngle(x1, y1, x2, y2) {
+      // 直角的边长
+      var x = Math.abs(x1 - x2),
+        y = Math.abs(y1 - y2),
+        // 斜边长
+        z = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)),
+        // 余弦
+        cos = y / z,
+        // 弧度
+        radina = Math.acos(cos);
+      // 角度
+      return 180 / (Math.PI / radina);
     },
     //创建路线上的点，包括起点和终点
     createPoints() {
@@ -117,7 +197,7 @@ export default {
         var points = this.routeForm.stops;
         //起点和终点
         var iconS = "https://webapi.amap.com/theme/v1.3/markers/n/start.png";
-        var iconM = "/static/img/mid.png";
+        var iconM = "https://webapi.amap.com/theme/v1.3/markers/n/mid.png";
         var iconE = "https://webapi.amap.com/theme/v1.3/markers/n/end.png";
         points.forEach((item, index) => {
           //记录创建的点
