@@ -74,8 +74,8 @@ import {
   PageHeader,
   CascaderPanel,
   Loading,
-  MessageBox,
-  Message,
+  // MessageBox,
+  // Message,
   Notification
 } from 'element-ui'
 
@@ -154,8 +154,8 @@ const plugins = [
   PageHeader,
   CascaderPanel,
   Loading,
-  MessageBox,
-  Message,
+  // MessageBox,
+  // Message,
   Notification
 ]
 const elementPlugins = {

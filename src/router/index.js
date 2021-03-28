@@ -13,7 +13,7 @@ const routes = [
       {
         path: '/planRoute',
         name: 'planRoute',
-        component: () => import( /* webpackChunkName: "about" */ '../views/testMap.vue')
+        component: () => import( /* webpackChunkName: "about" */ '../views/planRoute.vue')
       },
       {
         path: '/about',
